@@ -14,6 +14,13 @@
 -- get a "plausible looking" but wrong page -- the query still runs fine,
 -- it just doesn't show what a real page 2 should show.
 
-SELECT NULL::text AS order_id, NULL::text AS customer_id,
-       NULL::text AS order_status, NULL::timestamp AS order_purchase_timestamp
-WHERE FALSE;
+SELECT
+    order_id,
+    customer_id,
+    order_status,
+    order_purchase_timestamp
+FROM orders
+ORDER BY
+    order_purchase_timestamp DESC
+OFFSET 20 ROWS
+FETCH NEXT 20 ROWS ONLY;

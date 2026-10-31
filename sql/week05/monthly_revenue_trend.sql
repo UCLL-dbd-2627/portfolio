@@ -11,5 +11,20 @@
 -- to subtract from the current one -- the first month should show NULL,
 -- there's nothing before it to compare against.
 
-SELECT NULL::date AS month, NULL::numeric AS monthly_revenue, NULL::numeric AS change_from_prev_month
-WHERE FALSE;
+WITH monthly AS (
+    SELECT
+        date_trunc('month', o.order_purchase_timestamp) AS month,
+        SUM(oi.price) AS monthly_revenue
+    FROM orders o
+    JOIN order_items oi
+        ON o.order_id = oi.order_id
+    GROUP BY
+        date_trunc('month', o.order_purchase_timestamp)
+)
+SELECT
+    month,
+    monthly_revenue,
+    monthly_revenue - LAG(monthly_revenue) OVER (ORDER BY month) AS change_from_prev_month
+FROM monthly
+ORDER BY
+    month ASC;
