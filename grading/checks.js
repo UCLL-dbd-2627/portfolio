@@ -28,7 +28,14 @@ module.exports = [
   { week: "week01", id: "orders_by_city", expected: "week01/orders_by_city.json" },
   { week: "week01", id: "revenue_by_category", expected: "week01/revenue_by_category.json" },
 
-  { week: "week02", id: "seller_performance", expected: "week02/seller_performance.json" },
+  {
+    week: "week02",
+    id: "seller_performance",
+    expected: "week02/seller_performance.json",
+    // The question does not say how to round the average, so any valid rounding is accepted.
+    roundingColumns: ["avg_review_score"],
+    hint: "Hint: only order_items whose order has a review are counted (items without a review are left out), and the average may be rounded however you like.",
+  },
   { week: "week02", id: "payment_method_breakdown", expected: "week02/payment_method_breakdown.json" },
 
   {
