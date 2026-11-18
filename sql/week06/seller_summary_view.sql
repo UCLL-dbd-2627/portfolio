@@ -8,8 +8,21 @@
 -- This is also the week to look at geolocation with EXPLAIN ANALYZE and add
 -- whatever index actually helps -- see the README's "performance week" note.
 
--- TODO: CREATE OR REPLACE VIEW seller_summary AS ...
+CREATE OR REPLACE VIEW seller_summary AS
+SELECT
+    s.seller_id,
+    s.seller_name,
+    COUNT(oi.order_item_id) AS items_sold,
+    SUM(oi.price) AS total_revenue,
+    ROUND(AVG(r.review_score), 2) AS avg_review_score
+FROM sellers s
+JOIN order_items oi
+    ON s.seller_id = oi.seller_id
+LEFT JOIN order_reviews r
+    ON oi.order_id = r.order_id
+GROUP BY
+    s.seller_id,
+    s.seller_name;
 
-SELECT NULL::text AS seller_id, NULL::text AS seller_name, NULL::bigint AS items_sold,
-       NULL::numeric AS total_revenue, NULL::numeric AS avg_review_score
-WHERE FALSE;
+SELECT * FROM seller_summary
+ORDER BY total_revenue DESC;
