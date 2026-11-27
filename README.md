@@ -45,7 +45,7 @@ fixable thing.
 3. Add the **starter repo as a second remote**, called `upstream`. Your instructor may push fixes over the semester -- a typo in a widget's instructions, a bug in the grading harness, that kind of thing, not new content -- and this is how you pull those in without disturbing your own work:
    ```
    git remote add upstream <the starter repo URL your instructor gives you>
-  ```
+   ```
 
 ## 3. First-time setup
 
