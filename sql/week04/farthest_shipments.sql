@@ -36,5 +36,49 @@
 -- what a join against ~1M ungrouped rows actually costs, and whether an
 -- index on geolocation's zip column changes anything.
 
-SELECT NULL::text AS order_id, NULL::numeric AS distance_km
-WHERE FALSE;
+
+WITH geo_avg AS (
+    SELECT
+        geolocation_zip_code_prefix,
+        AVG(geolocation_lat) AS lat,
+        AVG(geolocation_lng) AS lng
+    FROM geolocation
+    GROUP BY geolocation_zip_code_prefix
+),
+order_sellers AS (
+    SELECT DISTINCT ON (order_id)
+        order_id,
+        seller_id
+    FROM order_items
+    ORDER BY order_id, seller_id
+)
+SELECT
+    o.order_id,
+    ROUND(
+        (
+            6371 * ACOS(
+                LEAST(
+                    1.0,
+                    COS(RADIANS(gc.lat)) *
+                    COS(RADIANS(gs.lat)) *
+                    COS(RADIANS(gs.lng - gc.lng)) +
+                    SIN(RADIANS(gc.lat)) *
+                    SIN(RADIANS(gs.lat))
+                )
+            )
+        )::numeric,
+        1
+    ) AS distance_km
+FROM orders o
+JOIN customers c
+    ON o.customer_id = c.customer_id
+JOIN order_sellers oi
+    ON o.order_id = oi.order_id
+JOIN sellers s
+    ON oi.seller_id = s.seller_id
+JOIN geo_avg gc
+    ON c.customer_zip_code_prefix = gc.geolocation_zip_code_prefix
+JOIN geo_avg gs
+    ON s.seller_zip_code_prefix = gs.geolocation_zip_code_prefix
+ORDER BY distance_km DESC
+FETCH FIRST 10 ROWS ONLY;

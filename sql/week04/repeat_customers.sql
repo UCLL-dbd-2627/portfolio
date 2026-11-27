@@ -18,5 +18,17 @@
 -- customer_name is one name per real person (per customer_unique_id), so
 -- you'll need it in your GROUP BY alongside customer_unique_id.
 
-SELECT NULL::text AS customer_unique_id, NULL::text AS customer_name, NULL::bigint AS order_count
-WHERE FALSE;
+SELECT
+    c.customer_unique_id,
+    c.customer_name,
+    COUNT(o.order_id) AS order_count
+FROM customers c
+JOIN orders o
+    ON c.customer_id = o.customer_id
+GROUP BY
+    c.customer_unique_id,
+    c.customer_name
+ORDER BY
+    order_count DESC,
+    c.customer_unique_id ASC
+FETCH FIRST 20 ROWS ONLY;

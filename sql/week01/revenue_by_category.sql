@@ -10,5 +10,13 @@
 -- Hint: this needs a three-table join: order_items -> products ->
 -- product_category_name_translation.
 
-SELECT NULL::text AS category, NULL::numeric AS total_revenue
-WHERE FALSE;
+SELECT
+    t.product_category_name_english AS category,
+    SUM(oi.price) AS total_revenue
+FROM order_items oi
+JOIN products p
+    ON oi.product_id = p.product_id
+JOIN product_category_name_translation t
+    ON p.product_category_name = t.product_category_name
+GROUP BY t.product_category_name_english
+ORDER BY total_revenue DESC;

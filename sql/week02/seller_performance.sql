@@ -7,6 +7,20 @@
 -- Expected columns: seller_id, seller_name, items_sold, avg_review_score
 -- Expected order: items_sold DESC
 
-SELECT NULL::text AS seller_id, NULL::text AS seller_name,
-       NULL::bigint AS items_sold, NULL::numeric AS avg_review_score
-WHERE FALSE;
+SELECT
+    s.seller_id,
+    s.seller_name,
+    COUNT(oi.order_item_id) AS items_sold,
+    ROUND(AVG(r.review_score), 2) AS avg_review_score
+FROM sellers s
+JOIN order_items oi
+    ON s.seller_id = oi.seller_id
+JOIN order_reviews r
+    ON oi.order_id = r.order_id
+GROUP BY
+    s.seller_id,
+    s.seller_name
+HAVING
+    COUNT(oi.order_item_id) >= 2
+ORDER BY
+    items_sold DESC;

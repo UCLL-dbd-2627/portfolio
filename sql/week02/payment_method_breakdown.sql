@@ -12,5 +12,11 @@
 -- you need to do about that before grouping, not after your counts look
 -- suspiciously high.
 
-SELECT NULL::text AS payment_type, NULL::bigint AS payment_count
-WHERE FALSE;
+SELECT
+    LOWER(TRIM(payment_type)) AS payment_type,
+    COUNT(*) AS payment_count
+FROM order_payments
+GROUP BY
+    LOWER(TRIM(payment_type))
+ORDER BY
+    payment_count DESC;

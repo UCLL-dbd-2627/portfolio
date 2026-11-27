@@ -24,14 +24,54 @@
 -- demo order first, or use ON CONFLICT DO NOTHING) -- the grader resets the
 -- database between runs, but you'll want that for local testing too.
 
+
 BEGIN;
 
--- TODO: INSERT INTO orders (...) VALUES (...);
+INSERT INTO orders (
+    order_id,
+    customer_id,
+    order_status,
+    order_purchase_timestamp,
+    order_estimated_delivery_date
+)
+SELECT
+    'order_demo_001',
+    customer_id,
+    'processing',
+    NOW(),
+    NOW() + INTERVAL '14 days'
+FROM customers
+ORDER BY customer_id
+LIMIT 1
+ON CONFLICT (order_id) DO NOTHING;
 
 SAVEPOINT before_items;
 
--- TODO: INSERT INTO order_items (...) VALUES (...), (...);
+INSERT INTO order_items (
+    order_id,
+    order_item_id,
+    product_id,
+    seller_id,
+    shipping_limit_date,
+    price,
+    freight_value
+)
+SELECT
+    'order_demo_001',
+    item_number,
+    (SELECT product_id FROM products ORDER BY product_id LIMIT 1 OFFSET item_number - 1),
+    (SELECT seller_id FROM sellers ORDER BY seller_id LIMIT 1),
+    NOW() + INTERVAL '7 days',
+    100.00,
+    10.00
+FROM generate_series(1, 2) AS item_number
+ON CONFLICT (order_id, order_item_id) DO NOTHING;
 
 COMMIT;
 
-SELECT order_id, customer_id, order_status FROM orders WHERE order_id = 'order_demo_001';
+SELECT
+    order_id,
+    customer_id,
+    order_status
+FROM orders
+WHERE order_id = 'order_demo_001';
