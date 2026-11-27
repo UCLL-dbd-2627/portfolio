@@ -33,6 +33,7 @@ const { findWidget, runQueryWidget, runActionWidget, substituteParams } = requir
 const { pool } = require(dbPath);
 
 const checks = require("./checks");
+const { snapRounding } = require("./rounding");
 
 const DB_URL = process.env.DATABASE_URL || "postgres://databasement:databasement@localhost:5432/databasement";
 
@@ -67,7 +68,7 @@ function resetDb({ skipGeolocation = false } = {}) {
     "product_category_name_translation", "sellers", "products", "customers",
     "geolocation", "orders", "order_items", "order_payments", "order_reviews",
   ];
-  // KEEP IN SYNC with db/init/00-init.sh: sample is the default, full is opt-in.
+  // KEEP IN SYNC with db/load_seed.sh: sample is the default, full is opt-in.
   const wantFull = process.env.USE_FULL_DATASET === "true";
   const seedDir = wantFull && fs.existsSync(path.join(ROOT, "db/seed/full")) && fs.readdirSync(path.join(ROOT, "db/seed/full")).length
     ? path.join(ROOT, "db/seed/full")
@@ -75,7 +76,7 @@ function resetDb({ skipGeolocation = false } = {}) {
   for (const table of loadOrder) {
     // geolocation is ~1M rows and no check touches it -- skip it for
     // grading resets specifically (the live dashboard's own seed load in
-    // db/init/00-init.sh is unaffected and still loads it for students to
+    // db/load_seed.sh is unaffected and still loads it for students to
     // explore). This is the single biggest cost in a reset against the
     // real dataset.
     if (skipGeolocation && table === "geolocation") continue;
@@ -84,7 +85,7 @@ function resetDb({ skipGeolocation = false } = {}) {
     if (!fs.existsSync(file)) continue;
 
     if (table === "products") {
-      // KEEP IN SYNC with db/init/00-init.sh's "products" case. The real
+      // KEEP IN SYNC with db/load_seed.sh's "products" case. The real
       // Olist dataset has categories on products that are missing from
       // product_category_name_translation (e.g. "pc_gamer") -- load into a
       // staging table (no FK enforced), backfill, then insert for real.
@@ -101,7 +102,7 @@ function resetDb({ skipGeolocation = false } = {}) {
         INSERT INTO products SELECT * FROM products_staging;
       `);
     } else if (table === "order_reviews") {
-      // KEEP IN SYNC with db/init/00-init.sh's "order_reviews" case. The
+      // KEEP IN SYNC with db/load_seed.sh's "order_reviews" case. The
       // real dataset has a handful of duplicate review_id rows -- load
       // into a staging table without the primary key, then keep the most
       // recently created row per review_id.
@@ -304,8 +305,13 @@ async function runChecks(filter) {
           }
         } else {
           const expected = loadExpected(slot.expected);
-          const hint = explainMismatch(normalize(slot.rows), normalize(expected));
-          if (hint) throw new Error(hint);
+          // Columns listed in check.roundingColumns accept any valid rounding
+          // (see rounding.js); check.hint is extra guidance shown on failure.
+          const hint = explainMismatch(
+            snapRounding(normalize(slot.rows), normalize(expected), check.roundingColumns),
+            normalize(expected)
+          );
+          if (hint) throw new Error(check.hint ? `${hint} ${check.hint}` : hint);
         }
       }
       results.push({ label, pass: true });
